@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>JQUERY JSON client</title>
+		<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+		<!-- Chargement de la bibliothèque JQuery -->
+		<script	src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>
+		<!-- Chargement du moteur de template Mustache -->
+		<script src="https://github.com/janl/mustache.js/raw/master/mustache.js"></script>
+		<script>
+			function displayError (XMLHttpRequest, textStatus, errorThrown) {
+				alert("error: " + XMLHttpRequest.responseText);
+			}
+			
+			function addNewDiscount() {
+				// Récupérer les valeurs saisies dans le formulaire
+				// cf: http://api.jquery.com/serialize/
+				var parameters = $(this).serialize();
+				$.getJSON(
+					// 1° paramètre : l'URL qui fournira les résultats JSON
+					'DerbySample/InsertBus?' + parameters, 
+					// 2° paramètre : la fonction qui sera appelée pour traiter le résultat
+					getAllDiscounts
+				// Eventuellement, la fonction appelée en cas d'erreur de traitement'
+				).error( displayError );
+				return false;
+			}
+			
+			function showAllDiscounts(jsonResult) {
+				// On va chercher le texte du template dans l'élément specifié
+				var template = $('#discountTemplate').html();
+				// On génère le HTML conformément aux résultats reçus via l'appel AJAX'
+				var processedTemplate = Mustache.to_html(template, jsonResult);
+				// On affiche les résultats à l'endroit voulu dans la page
+				$('#resultArea').html(processedTemplate);					
+			}
+			
+			
+			function getAllDiscounts() {
+				// La fonction getJSON est fournie par la bibliothèque JQuery
+				$.getJSON(
+					// 1° paramètre : l'URL qui fournira les résultats JSON
+					'DerbySample/SelectBus', 
+					// 2° paramètre : la fonction qui sera appelée pour traiter le résultat
+					showAllDiscounts
+				// Eventuellement, la fonction appelée en cas d'erreur de traitement'
+				).error( displayError );
+			}
+			
+			// Définit le code a exécuter quand la page a fini de se charger.
+			$(document).ready(
+				function() {
+					// Quand on soumet le formulaire 'addDiscountForm', il faut apppeler la fonction 'addNewDiscount'
+					$("#addDiscountForm").on("submit", addNewDiscount );
+					getAllDiscounts();
+				}
+			);
+		</script>
+	</head>
+	<body>
+		<a href=".">Retour au menu</a><br/>
+		<!-- le template qui sera utilisé pour formatter les résultats de la requête -->
+		<script id="discountTemplate" type="text/template">
+			<TABLE BORDER="1">
+				<TR><TH>Ligne</TH>
+                                    <TH>Destination</TH>
+                                    <TH>ShortName</TH>
+                                    </TR>
+				{{#records}} 
+								
+				<TR><TD>{{ID}}</TD>
+                                    <TD>{{DESTINATION}}</TD>
+                                    <TD>{{SHORTNAME}}</TD>
+                                    
+                                    </TR>
+				{{/records}}
+			</TABLE>
+		</script>
+
+		<form id="addDiscountForm">  
+			<fieldset>
+                            
+                            <label for="p1">id</label>  
+				<input type="text" name="p1" size="20" maxlength="20"/><br />
+                                
+				<label for="p2">Destination</label>  
+				<input type="text" name="p2" size="20" maxlength="20"/><br />
+
+				<label for="p3">Shortname</label>  
+				<input type="text" name="p3" size="3" maxlength="3" value=""/>
+				<br />
+				<input type="submit" value="Ajouter" />  
+			</fieldset>  
+		</form>
+		 
+		<fieldset id="fs">
+			<legend>Bus :</legend>
+			<div id="resultArea"></div>			
+		</fieldset>
+	</body>
+</html>

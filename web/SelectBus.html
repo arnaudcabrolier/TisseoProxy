@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta http-equiv="pragma" content="no-cache" />
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+        <title>Horaires</title>
+               
+  
+        <script	src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>
+
+        <script src="https://github.com/janl/mustache.js/raw/master/mustache.js"></script>
+
+
+        <script>
+            //Fonction d'erreur
+            function displayError(XMLHttpRequest, textStatus, errorThrown) {
+                alert("error: " + XMLHttpRequest.responseText);
+            }
+            
+            function favoris(){
+            $.getJSON('DerbySample/AllBuses', function(data) {
+            alert(data.records[0].DESTINATION);
+            });
+            }
+            
+            			function showAllBuses(jsonResult) {
+				// On peut accéder individuellement à chaque enregistrement
+				//alert( "Le premier code vaut : " + jsonResult.records[0].DESTINATION  );
+				// Pour les afficher tous, on utilise le moteur de template
+				// On va chercher le texte du template dans l'élément specifié
+                                // alert(jsonResult);
+				var template = $('#discountTemplate').html();
+				// On génère le HTML conformément aux résultats reçus via l'appel AJAX'
+				var processedTemplate = Mustache.to_html(template, jsonResult);
+				// On affiche les résultats à l'endroit voulu dans la page
+				$('#resultArea').html(processedTemplate);
+			}
+			
+			function getAllBuses() {
+				$.getJSON('DerbySample/SelectBus',showAllBuses).error( displayError );
+			}
+		
+			$(document).ready(
+				function() {
+                            $("#showBuses").on("click", getAllBuses );
+				}
+			);	
+
+
+           
+
+        </script>   
+    </head>
+    <body>
+        <h1>Favoris</h1>
+        
+<input type="button" value="Favoris" onClick="favoris();" size="50">
+
+		<a href=".">Retour au menu</a><br/>
+		<!-- le template qui sera utilisé pour formatter les résultats de la requête -->
+		<script id="discountTemplate" type="text/template">
+			<TABLE BORDER="1">
+				<TR><TH>Ligne</TH>
+                                    <TH>Destination</TH>
+                                    <TH>ShortName</TH>
+                                    </TR>
+				{{#records}} 
+								
+				<TR><TD>{{ID}}</TD>
+                                    <TD>{{DESTINATION}}</TD>
+                                    <TD>{{SHORTNAME}}</TD>
+                                    
+                                    </TR>
+				{{/records}}
+			</TABLE>
+		</script>
+
+		<button type="button" id="showBuses">List all Buses</button><br/>
+		 
+		<fieldset id="fs">
+			<legend>Buses :</legend>
+			<div id="resultArea"></div>			
+		</fieldset>
+                
+    </body>
+</html>

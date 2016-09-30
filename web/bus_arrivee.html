@@ -1,0 +1,201 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="fr">
+
+    <head>
+         
+        <title>L'arrêt le plus proche</title>
+
+            <style>
+                table td{
+                margin:30px;
+            }
+            th{
+                background:gray;
+            }
+            </style>
+    </head>
+
+    <body>
+
+        <div id="bus_arrivee" data-role="page">
+            
+            
+        <div data-role="header">
+            <a href="index.jsp" data-icon="back" data-transition="slide" data-reverse="true">Retour</a>
+	<h1>Quand arrive mon bus ?</h1>     
+	<a href="index.html" data-icon="check">Info</a></div>
+ 
+            
+         <div data-role="content"> 
+            
+        
+                    <script type="text/javascript">
+                        
+                      
+    
+    
+            //Fonction d'erreur
+            function displayError(XMLHttpRequest, textStatus, errorThrown) {
+                alert("error: " + XMLHttpRequest.responseText);
+            }
+
+            //Fonction saisie station + autocomplétion
+            function nouvelle_recherche() {
+                //alert($("#zs_station").val())
+                if ($("#zs_station").val().length >= 2) {
+                    station = $("#zs_station").val();
+                    url = 'tisseo/placesList?term=' + station + '&displayOnlyStopAreas=1&format=json';
+                    $.getJSON(url, showResult).error(displayError);
+                }
+            }
+            function showResult(jsonResult) {
+                
+                 
+                //station = jsonResult.placesList.place;
+                station = jsonResult.placesList.place;
+                
+               //alert(station[1].label)
+
+                $("#zs_station").autocomplete({
+                    source: station,
+                    minLength: 2,
+                    
+                  
+                    select: function(event, ui) {
+                        valider(ui.item.value);
+                    }
+                });
+            
+            }
+
+ //Affichage de la recherche
+        function valider(value) {
+            //alert(value)
+            url = 'tisseo/placesList?term=' + value + '&displayOnlyStopAreas=1&format=json';
+            //alert(url)
+            $.getJSON(url, showSearch).error(displayError);
+                
+            //Affiche le temps de chargement 
+            $("#chargement").show();
+        }
+            
+        //recherche des lignes pour l'arret selectionné
+        function showSearch(jsonResult) {
+            //alert(jsonResult.placesList.place[0].id)
+            id = jsonResult.placesList.place[0].id;
+            url = 'tisseo/departureBoard?stopPointId=' + id + '&format=json&displayRealTime=1';
+            //alert(url);
+            $.getJSON(url, DeparturesResult).error(displayError);
+        }
+
+        //Liste des horraires et lignes
+        function DeparturesResult(jsonResult) {
+            //Enlever le temps de chargement
+            $("#chargement").hide();
+
+            var LineName = new Array();
+            var LineNumber = new Array();
+            var Time = new Array();
+            var BusDirection = new Array();
+            var LineColor= new Array();
+
+            var data = new Array();
+
+            for (i = 0; i < jsonResult.departures.departure.length - 1; i++) {
+                LineName[i] = jsonResult.departures.departure[i].line.name;
+                LineNumber[i] = jsonResult.departures.departure[i].line.shortName;
+                hourTime = jsonResult.departures.departure[i].dateTime.split(" ");
+                Time[i] = hourTime[1];
+                LineColor[i]=jsonResult.departures.departure[i].line.color
+                BusDirection[i] = jsonResult.departures.departure[i].destination[0].name;
+                data[i] = Time[i] + "#" + LineNumber[i] + "#" + LineName[i] + "#" + BusDirection[i]+"#"+LineColor[i];
+            }
+                
+            //Triage du tableau
+            data.sort();
+
+            //Supression des doublons
+            var i, j, len = data.length, dataclean = [], obj = {};
+            for (i = 0; i < len; i++) {
+                obj[data[i]] = 0;
+            }
+            for (j in obj) {
+                dataclean.push(j);
+            }
+                
+            //Heure courante
+            d = new Date();   
+            
+            var t=$("#zs_station").val();
+            $("h3").append("Lignes qui déservent "+t+" :");
+                
+            //Affichage du tableau propre
+            var contenu="<table data-role='table' style='margin:10px'><th align='left'>N°</th><th align='left'>Nom de ligne</th><th align='left'>Direction</th><th align='left'>Arrivée</th><th align='left'>Temps d'attente</th>"
+            for(i=0;i<dataclean.length;i++){
+                table=dataclean[i].split("#")
+                horaire=table[0].split(":")
+                    
+                //Heure courante
+                var Reel =  new Date();
+                //Heure d'arrivée du bus
+                var Bus=    new Date();
+                Bus.setHours(horaire[0]);
+                Bus.setMinutes(horaire[1]);
+                Bus.setSeconds(horaire[2]);
+                //Délais en milisecondes
+                délais=Bus-Reel;
+                //délais en heures
+                heure=Math.floor(délais/3600000)%60;
+                //délais en minutes
+                minute=Math.floor(délais/60000)%60;
+                //délais en secondes
+                seconde=Math.floor(délais/1000)%60;
+                    
+                //Gestion de l'affichage
+                if(Math.floor(délais/3600000)%60==0){
+                    if(minute==1){
+                        délais= minute+" minute, "+seconde+" secondes "
+                    }
+                    else{
+                        délais= minute+" minutes, "+seconde+" secondes "
+                    }
+                }
+                else if(heure==1){
+                    délais= heure+" heure, "+minute+" minutes"
+                }
+                else{
+                    délais=heure+" heures, "+minute+" minutes"
+                }
+                    
+                //Affichage des colonnes du tableau
+                contenu+="<tr><td align='center' width='5px' bgcolor="+table[4]+" style='border-radius:10px;padding:3px;color:white;width:60px;'>"+table[1]+"</td><td align='left' style='margin:3px;'>"+table[2]+"</td><td align='left'>"+table[3]+"</td><td align='left'>"+table[0]+"</td><td align='left'><b>"+délais+"</b></td></tr>"
+            }
+            contenu+="</table>"
+            $("#resultat").html(contenu)
+        }
+
+        //Pas touche
+        $(document).ready(
+        function() {
+            $("#tisseoTest").on("click", nouvelle_recherche);
+        }
+    );
+ 
+
+
+        </script>   
+
+        <h2>Mon arrêt :</h2>
+        <input id="zs_station" type="search" size="50" onkeyup="nouvelle_recherche()"/>
+        <p><center><img id="chargement" src=ajax-loader.gif style="display:none;"/></center></p>
+
+
+        <h3></h3>
+        <div id="resultat" data-role="listview"></div>
+
+                    
+         </div>
+            <br/><div data-role="footer" style="width:100%;font-size:10px;text-align:center;position:absolute;bottom:0px;overflow:fixed">            
+             <p>Copyright - MAG</p></div>
+        </div>
+    </body>
+</html>

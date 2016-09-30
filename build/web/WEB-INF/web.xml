@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<web-app version="3.0" xmlns="http://java.sun.com/xml/ns/javaee" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://java.sun.com/xml/ns/javaee http://java.sun.com/xml/ns/javaee/web-app_3_0.xsd">
+    <servlet> 
+        <servlet-name>proxyServlet</servlet-name> 
+        <servlet-class>com.jsos.httpproxy.HttpProxyServlet</servlet-class> 
+        <init-param> 
+            <param-name>host</param-name> 
+            <param-value>http://pt.data.tisseo.fr/</param-value> 
+        </init-param> 
+        <init-param> 
+            <param-name>path</param-name> 
+            <param-value>true</param-value> 
+        </init-param> 
+    </servlet>
+    <servlet-mapping> 
+        <servlet-name>proxyServlet</servlet-name> 
+        <url-pattern>/tisseo/*</url-pattern> 
+    </servlet-mapping>
+    
+    
+    
+    <servlet>
+		<description>Servlet générique qui exécute une requête JDBC et renvoie le résultat en JSON.
+			Format d'appel : /DerbySample/NOM_DE_LA_REQUETE?paramètres...
+		</description>
+                
+		<servlet-name>DerbySample</servlet-name>
+		<servlet-class>bastide.isis.JSONQuery.JSONQueryServlet</servlet-class>
+		<init-param>
+			<description>Configuration de la connexion à la BD</description>
+			<param-name>driverString</param-name>
+			<param-value> jdbc:derby://localhost:1527/tisseo_DB;user=app;password=app </param-value>
+		</init-param>
+                
+		<init-param>
+			<description>Obtenir Stop</description>
+			<param-name>/SelectStop</param-name>
+			<param-value>SELECT * FROM STOP</param-value>
+		</init-param>
+                
+      
+                <init-param>
+			<description>Ajouter un STOP</description>
+			<param-name>/InsertStop</param-name>
+			<param-value> INSERT INTO STOP(ID,NAME) VALUES (?,?) </param-value>
+		</init-param>
+        
+	
+	</servlet>
+        
+        	<servlet-mapping>
+		<servlet-name>DerbySample</servlet-name>
+		<url-pattern>/DerbySample/*</url-pattern>
+                </servlet-mapping>
+        
+        
+        
+    <session-config>
+        <session-timeout>
+            30
+        </session-timeout>
+    </session-config>
+</web-app>

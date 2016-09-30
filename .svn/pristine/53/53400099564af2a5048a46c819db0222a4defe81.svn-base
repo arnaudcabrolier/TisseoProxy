@@ -1,0 +1,48 @@
+<%-- 
+    Document   : index
+    Created on : 21 mars 2013, 15:42:54
+    Author     : rbastide
+--%>
+
+<%@page contentType="text/html" pageEncoding="UTF-8"%>
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+        <title>Tisseo Request</title>
+        <!-- Chargement de la bibliothèque JQuery -->
+        <script	src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>
+        <script>
+            function displayError (XMLHttpRequest, textStatus, errorThrown) {
+                alert("error: " + XMLHttpRequest.responseText);
+            }
+			
+            function showResult(jsonResult) {
+                alert( "Le premier lieu est : " + jsonResult.placesList.place[0].label );
+            }
+			
+            function test() {
+                $.getJSON(
+                    'tisseo/placesList?term=cav&format=json', 
+                    showResult
+                ).error( displayError );
+            }
+
+            $(document).ready(
+                function() {
+                    $("#tisseoTest").on("click", test );
+                }
+            );			
+        </script>
+
+    </head>
+    <body>
+        <h1>Hello AJAX Tisseo</h1>
+        Fait un appel à l'API Tisseo <a href="http://pt.data.tisseo.fr/placesList?term=cav&format=json" 
+                                        target="_blank">http://pt.data.tisseo.fr/placesList?term=cav&format=json</a><br> 
+        en passant par la <a href="http://www.servletsuite.com/servlets/httpproxy.htm" target="_blank">servlet</a> proxy 
+        <a href="tisseo/placesList?term=cav&format=json" target="_blank">tisseo/placesList?term=cav&format=json</a><br>
+        <button type="button" id="tisseoTest">Appel à l'API Tisseo</button><br/>
+
+    </body>
+</html>

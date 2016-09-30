@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Parcours de ligne</title>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+        <meta name="viewport" content="initial-scale=1.0, user-scalable=yes" />
+        <style type="text/css">
+            html { height: 100% }
+            body { height: 100%; margin: 0px; padding: 0px }
+            #map_canvas { height: 100% }
+        </style>
+              
+    </head>
+
+    <body>
+        
+                <div id="carte" data-role="page">
+        <script type="text/javascript">
+            
+            var map;
+            var directionsDisplay;
+            var directionsService = new google.maps.DirectionsService();
+            var Linetransport=new Array()
+            var LineId=new Array()
+            var Modetransport
+            			
+            function displayError (XMLHttpRequest, textStatus, errorThrown) {
+                alert("error: " + XMLHttpRequest.responseText);
+            }
+            
+            //************************Fonction liste des lignes*************************\\
+            function liste_arret() {
+                url='tisseo/linesList?format=json'
+                $.getJSON(url,showLine).error( displayError );    
+            }
+            
+            //************************Affiche les nome des lignes de transport 
+            function showLine(jsonResult){
+                 $("#load").hide("fast");
+                 $("#titre").html("Lignes :");
+                var markup1="<div data-role='controlgroup'>";
+                $("#resultat").append(markup1).trigger("create");
+                
+                for(i=0;i<jsonResult.lines.line.length-1;i++){
+                    //transportmode indéfinie pour la ligne 48
+                    if(jsonResult.lines.line[i].shortName!="48" && jsonResult.lines.line[i].shortName!="EXPOS"){
+                        //on s'interresse qu'aux métros, bus et tramways
+                        if(jsonResult.lines.line[i].transportMode.name=="métro" || jsonResult.lines.line[i].transportMode.name=="bus"  || jsonResult.lines.line[i].transportMode.name=="tramway"){
+                            //pour éviter les ligne en double
+                            if(i!=0 && jsonResult.lines.line[i].name!=jsonResult.lines.line[i-1].name && jsonResult.lines.line[i].shortName!=jsonResult.lines.line[i-1].shortName+"s")
+                            {
+                                LineId[i]=jsonResult.lines.line[i].id
+                                LineName=jsonResult.lines.line[i].name
+                                LineShortName=jsonResult.lines.line[i].shortName
+                                Linetransport[i]=jsonResult.lines.line[i].transportMode.name
+                                markup2="<a data-role='button' onclick='liste_lignes_arret("+i+")' style='text-align:justify;padding-left:20%' data-theme='c'>"+LineShortName+" - "+LineName+"</a>"
+                                $("#resultat").append(markup2).trigger("create");
+                            }
+                            else if(i==0){
+                                LineId[i]=jsonResult.lines.line[i].id
+                                LineName=jsonResult.lines.line[i].name
+                                LineShortName=jsonResult.lines.line[i].shortName
+                                Linetransport[i]=jsonResult.lines.line[i].transportMode.name
+                                markup3="<a data-theme='c' style='text-align:justify;padding-left:20%' data-role='button' onclick='liste_lignes_arret("+i+")'>"+LineShortName+" - "+LineName+"</a>"
+                                $("#resultat").append(markup3).trigger("create");
+                            }
+
+                        }
+                         markup4="</div>";
+                    $("#resultat").append(markup4).trigger("create");
+                    }
+                }
+            }
+            
+                        function scrolltop(){
+	        $('html, body').animate({scrollTop:0}, 'slow');
+	        return false;
+         }
+            
+            //************************Fonction qui liste tous les arrets de la lignes passée en paramètre
+            function liste_lignes_arret(i){
+                scrolltop();
+                Modetransport=Linetransport[i]
+                url = 'tisseo/stopPointsList?format=json&key=a6d7cd7dd2a7ab68df903bbadbf1ea77d &displayCoordXY=1&lineId='+LineId[i];
+                $.getJSON(url, showResult).error(displayError);
+            }
+            
+            var id=new Array()
+            var stopX=new Array()
+            var stopY=new Array()
+            var stopName=new Array()
+            var data=new Array()
+            
+            function showResult(jsonResult){
+                id=[]
+                stopX=[]
+                stopY=[]
+                stopName=[]
+                data=[]
+                for (i = 0; i < jsonResult.physicalStops.physicalStop.length-1; i++){
+                    if(i== 0){
+                        id.push(jsonResult.physicalStops.physicalStop[i].id)
+                        stopX.push(jsonResult.physicalStops.physicalStop[i].y)
+                        stopY.push(jsonResult.physicalStops.physicalStop[i].x)
+                        stopName.push(jsonResult.physicalStops.physicalStop[i].name )
+                    }
+                    else if(jsonResult.physicalStops.physicalStop[i-1].name!=jsonResult.physicalStops.physicalStop[i].name){
+                        id.push(jsonResult.physicalStops.physicalStop[i].id)
+                        stopX.push(jsonResult.physicalStops.physicalStop[i].y)
+                        stopY.push(jsonResult.physicalStops.physicalStop[i].x)
+                        stopName.push(jsonResult.physicalStops.physicalStop[i].name )
+                    }
+                }
+                
+                for (i = 0; i < id.length; i++){    
+                    data[i]=stopX[i]+" "+stopY[i]+" "+stopName[i]
+                }
+                data.sort()
+                var column=new Array()
+                for (i = 0; i < data.length; i++){
+                    column=data[i].split(" ")
+                    
+                    stopX[i]=column[0]
+                    stopY[i]=column[1]
+                    stopName[i]=column[2]
+                    
+                }
+                if(Modetransport=="métro"){
+                    TraceMetro()
+                }
+                else{
+                    TraceBusAndTram()                  
+                }
+            }
+            
+            //************************La fonction pour tracer les lignes de métro*****************************\\
+            function TraceMetro(){
+                // cf: https://developers.google.com/maps/documentation/javascript/directions
+                directionsDisplay = new google.maps.DirectionsRenderer();	
+                // On affiche la carte
+                // Définir les coordonnées du centre de la carte
+                var coordinates = new google.maps.LatLng(43.60464169999999, 1.445638899999949);
+                // Options d'affichage de la carte
+                var myOptions = {
+                    zoom: 12,
+                    center: coordinates,
+                    mapTypeId: google.maps.MapTypeId.ROADMAP
+                };
+                // Afficher la carte dans la page
+                map = new google.maps.Map($('#map_canvas')[0], myOptions);
+                directionsDisplay.setMap(map);
+                // Après avoir affiché la carte, on va afficher les stations
+                // Tableau des points à visiter
+                var linePoints = new Array();
+                // Info sur les points intermédiaires pour le calcul de l'intinéraire
+                var wayPoints = new Array();
+                
+                for (i=0;i<id.length;i++) { // Pour chaque enregistrement
+                    // On calcule les coordonnées
+                    var coordinates = new google.maps.LatLng(stopX[i],stopY[i]);
+                    // On crée un marqueur
+                    var marker = new google.maps.Marker({
+                        position: coordinates,
+                        animation: google.maps.Animation.DROP,
+                        //icon: overlays[i].IMAGEURL,
+                        title:stopName[i]
+                    });
+                    // Poser le marqueur sur la carte
+                    marker.setMap(map);
+                    // Ajouter le point à la liste
+                    linePoints.push(coordinates)
+                    wayPoints.push({ location : coordinates, stopover : true })
+                }
+
+                // On crée le chemin
+                var path = new google.maps.Polyline({
+                    path: linePoints,
+                    strokeColor: "#FF0000",
+                    strokeOpacity: 1.0,
+                    strokeWeight: 2
+                });
+                // On le montre sur la carte
+                path.setMap(map);
+            }
+            
+            //************************La fonction pour tracer les lignes de bus et de tram*****************************\\
+            function TraceBusAndTram () {
+                // cf: https://developers.google.com/maps/documentation/javascript/directions
+                directionsDisplay = new google.maps.DirectionsRenderer();	
+                // On affiche la carte
+                // Définir les coordonnées du centre de la carte
+                var coordinates = new google.maps.LatLng(43.60464169999999, 1.445638899999949);
+                // Options d'affichage de la carte
+                var myOptions = {
+                    zoom: 12,
+                    center: coordinates,
+                    mapTypeId: google.maps.MapTypeId.ROADMAP
+                };
+                // Afficher la carte dans la page
+                map = new google.maps.Map($('#map_canvas')[0], myOptions);
+                directionsDisplay.setMap(map);
+                // Après avoir affiché la carte, on va afficher les stations
+                // Tableau des points à visiter
+                var linePoints = new Array();
+                // Info sur les points intermédiaires pour le calcul de l'intinéraire
+                var wayPoints = new Array();
+                
+                for (i=0;i<id.length;i++) { // Pour chaque enregistrement
+                    // On calcule les coordonnées
+                    var coordinates = new google.maps.LatLng(stopX[i],stopY[i]);
+                    // On crée un marqueur
+                    var marker = new google.maps.Marker({
+                        position: coordinates,
+                        animation: google.maps.Animation.DROP,
+                        //icon: overlays[i].IMAGEURL,
+                        title:stopName[i]
+                    });
+                    // Poser le marqueur sur la carte
+                    marker.setMap(map);
+                    // Ajouter le point à la liste
+                    linePoints.push(coordinates)
+                    wayPoints.push({ location : coordinates, stopover : true })
+                }    
+            }
+            
+            // Définit le code a exécuter quand la page a fini de se charger.
+            $(document).ready( liste_arret );
+        </script>
+            
+        <div data-role="header">
+            <a href="index.jsp" data-icon="back" data-transition="slide" data-reverse="true">Retour</a>
+	<h1>Arrêt de lignes</h1>     
+	<a href="index.html" data-icon="check">Info</a></div>
+ 
+            
+         <div data-role="content"> 
+         
+          <h1 id="titre" style="margin-bottom:5px"></h1>
+        <div id="resultat" style="width:35%;position:absolute;padding-left:10px;padding-right:10px">
+            <center><img id="load" src="ajax-loader.gif"/></center>
+        </div>
+         <div style="width:62%;margin:0 0px 0px 35%">
+        <div id="map_canvas" style="margin-left:2%;width:62%; height:92%;overflow:visible;position:absolute;top:50px;"></div>
+        </div>
+        </div>
+ 
+         </div>
+        
+
+    </body>
+</html>
